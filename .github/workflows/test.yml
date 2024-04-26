@@ -1,0 +1,35 @@
+name: Test
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+
+jobs:
+  test:
+    permissions:
+      contents: read
+      id-token: write
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Import Secrets
+      uses: hashicorp/vault-action@v3.0.0
+      with:
+        url: https://vault.lmhd.me
+        method: jwt
+        path: github_jwt
+        role: vault-github-action
+        secrets: |
+            aws/lmhd/test/creds/test access_key | AWS_ACCESS_KEY_ID ;
+            aws/lmhd/test/creds/test secret_key | AWS_SECRET_ACCESS_KEY ;
+    - name: Whoami
+      uses: nick-fields/retry@v3
+      with:
+        timeout_seconds: 15
+        max_attempts: 3
+        retry_on: error
+        command: aws sts get-caller-identity --region eu-west-1 --color on
